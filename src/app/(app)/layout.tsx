@@ -1,9 +1,11 @@
 import type { ReactNode } from "react";
-import AppNav from "@/component/app-nav";
+import AppNav from "@/components/app-nav";
+import { Probe } from "@/components/Probe";
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-dvh grid grid-rows-[auto_1fr]">
+      <Probe name="(app) layout" />
       <AppNav />
       <div className="grid md:grid-cols-[240px_1fr]">
         <aside className="hidden md:block border-r p-4 space-y-2">
