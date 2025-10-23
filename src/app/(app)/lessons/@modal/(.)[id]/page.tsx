@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 
 export default function LessonModal() {
   const router = useRouter();
-  const { id } = useParams<{ id: string }>();  // ← 從 hook 取得 id
+  const { id } = useParams<{ id: string }>(); // ← 從 hook 取得 id
 
   return (
     <div
