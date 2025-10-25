@@ -1,20 +1,40 @@
 // app/(app)/lessons/[id]/page.tsx
-export default async function LessonFullPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params; // ← 關鍵：先 await 再取用 id
+import { getPack } from '../data';
 
-  // 模擬慢資料
-  await new Promise((r) => setTimeout(r, 500));
+export default async function LessonDetail({
+  params,
+}: { params: Promise<{ id: string }> }) {
+  const { id } = await params;       // 新版 Next 建議 await params
+  const pack = await getPack(id);
+
+  if (!pack) {
+    return <div className="p-6 text-sm text-red-600">找不到此教材。</div>;
+  }
 
   return (
-    <div className="space-y-3">
-      <h1 className="text-xl font-bold">Lesson #{id}（完整頁）</h1>
-      <p className="text-gray-600">
-        直接以網址列開啟或重整時，會看到完整頁而不是 modal。
-      </p>
+    <div className="space-y-4">
+      <h1 className="text-xl font-bold">{pack.title} <span className="text-sm text-gray-500">({pack.langFrom} → {pack.langTo})</span></h1>
+      <ul className="space-y-2">
+        {pack.items.map(it => (
+          <li key={it.id} className="rounded border p-3">
+            <div className="font-medium">{it.term} <span className="text-gray-500">— {it.translation}</span></div>
+            {it.pos && <div className="text-xs text-gray-500 mt-0.5">詞性：{it.pos}</div>}
+            {(it.exampleFrom || it.exampleTo) && (
+              <div className="mt-1 text-sm">
+                {it.exampleFrom && <div>📘 {it.exampleFrom}</div>}
+                {it.exampleTo && <div>📗 {it.exampleTo}</div>}
+              </div>
+            )}
+            {!!it.tags?.length && (
+              <div className="mt-1 flex flex-wrap gap-1">
+                {it.tags!.map(tag => (
+                  <span key={tag} className="text-[11px] rounded bg-gray-100 px-1.5 py-0.5">{tag}</span>
+                ))}
+              </div>
+            )}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

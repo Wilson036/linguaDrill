@@ -1,34 +1,108 @@
+// app/(app)/lessons/page.tsx
 'use client';
 
+import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { LANGUAGE_PACKS } from './data';
 
-// Day 1 先放假資料；Day 2 會接 Prisma/DB
-const lessons = [
-  { id: 'demo-en', title: 'Demo (EN) – Airport Check-in', language: 'en' },
-  { id: 'demo-ja', title: 'Demo (JA) – コンビニ会話', language: 'ja' },
-];
+
+function highlight(text: string, kw: string) {
+    if (!kw) return text;
+    const re = new RegExp(`(${kw.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')})`, 'ig');
+    return text.split(re).map((seg, i) =>
+      seg.toLowerCase() === kw.toLowerCase()
+        ? <mark key={i} className="bg-yellow-200 px-0.5 rounded">{seg}</mark>
+        : <span key={i}>{seg}</span>
+    );
+  }
+
+  async function copyLink(id: string) {
+    const href = `${window.location.origin}/lessons/${id}`;
+    await navigator.clipboard.writeText(href);
+    alert('已複製分享連結：' + href);
+  }
+
 
 export default function LessonsPage() {
+  const router = useRouter();
+  const sp = useSearchParams();
+
+  const initQ = sp.get('q') ?? '';
+  const [q, setQ] = useState(initQ);
+  const dq = useDeferredValue(q);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (dq) url.searchParams.set('q', dq);
+    else url.searchParams.delete('q');
+    router.replace(url.toString(), { scroll: false });
+  }, [dq, router]);
+
+  const list = useMemo(() => {
+    const kw = dq.trim().toLowerCase();
+    if (!kw) return LANGUAGE_PACKS;
+    return LANGUAGE_PACKS
+      .map(p => ({
+        ...p,
+        // 呈現用：符合關鍵字的數量
+        matchCount: p.items.filter(
+          it =>
+            p.title.toLowerCase().includes(kw) ||
+            it.term.toLowerCase().includes(kw) ||
+            it.translation.toLowerCase().includes(kw)
+        ).length
+      }))
+      .filter(p => p.matchCount > 0 || p.title.toLowerCase().includes(kw));
+  }, [dq]);
+
+
+
   return (
-    <section className="space-y-4">
-      <h2 className="text-2xl font-semibold">Lessons</h2>
-      <ul className="divide-y rounded border">
-        {lessons.map((l) => (
-          <li key={l.id} className="hover:bg-muted/50 p-4">
-            <Link
-              href={`/lessons/${l.id}`}
-              key={l.id}
-              className="block w-full rounded border p-3 text-left hover:bg-gray-50"
-            >
-              {l.title}（用 store 開 modal）
-            </Link>
+    <div className="space-y-4">
+      <h1 className="text-xl font-bold">語言學習教材</h1>
+
+      <input
+        className="w-full rounded border px-3 py-2"
+        placeholder="搜尋標題 / 原文 / 翻譯（會同步到 ?q=）"
+        value={q}
+        onChange={e => setQ(e.target.value)}
+      />
+
+      <ul className="space-y-2">
+        {list.map(p => (
+          <li key={p.id} className="flex items-center justify-between rounded border p-3">
+            <div className="min-w-0">
+              <Link className="block hover:underline" href={`/lessons/${p.id}`}>
+                {highlight(p.title, dq)}
+              </Link>
+              <div className="mt-1 text-xs text-gray-500">
+                {p.langFrom} → {p.langTo} ・ 共 {p.items.length} 筆
+                {dq && typeof (p as any).matchCount === 'number' && (
+                  <> ・ 符合 { (p as any).matchCount } 筆</>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Link
+                className="text-xs rounded bg-gray-100 px-2 py-1 hover:bg-gray-200"
+                href={`/lessons/${p.id}`}
+              >
+                查看
+              </Link>
+              <button
+                onClick={() => copyLink(p.id)}
+                className="text-xs rounded bg-blue-600 px-2 py-1 text-white hover:opacity-90"
+              >
+                複製連結
+              </button>
+            </div>
           </li>
         ))}
+        {list.length === 0 && (
+          <li className="rounded border p-3 text-sm text-gray-500">沒有符合的結果</li>
+        )}
       </ul>
-      <p className="text-sm text-gray-500">
-        點清單項目會以 <strong>Modal</strong> 打開，但 URL 仍會變成
-        /lessons/[id]。
-      </p>
-    </section>
+    </div>
   );
 }
