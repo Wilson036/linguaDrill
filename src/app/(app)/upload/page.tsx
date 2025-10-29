@@ -4,6 +4,7 @@
 import { useRef, useState } from 'react';
 
 type UploadResp = { ok: true; url: string } | { ok: false; error: string };
+const base = process.env.NEXT_PUBLIC_API_BASE;
 
 export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
@@ -11,7 +12,6 @@ export default function UploadPage() {
   const [status, setStatus] = useState<
     'idle' | 'ready' | 'uploading' | 'done' | 'error'
   >('idle');
-  const audioRef = useRef<HTMLAudioElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 選檔並立即上傳
@@ -35,13 +35,13 @@ export default function UploadPage() {
     try {
       const fd = new FormData();
       fd.append('file', selectedFile);
-      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      const res = await fetch(`${base}/upload`, { method: 'POST', body: fd });
       const data = (await res.json()) as UploadResp;
       console.log({ data });
       if (!res.ok || !data.ok) {
         throw new Error('上傳失敗');
       }
-      setServerUrl(data.url);
+      setServerUrl(`${base}${data.url}`);
       setStatus('done');
     } catch (e) {
       console.error(e);
@@ -76,7 +76,7 @@ export default function UploadPage() {
       )}
 
       {serverUrl ? (
-        <audio ref={audioRef} className="w-full" controls src={serverUrl} />
+        <audio  className="w-full" controls src={serverUrl} />
       ) : null}
 
       <div className="text-sm text-gray-600">
