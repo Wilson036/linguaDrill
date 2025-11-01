@@ -21,6 +21,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 今日複習
               </a>
             </li>
+            <li>
+              <a href="/upload" className="hover:underline">
+                上傳教材
+              </a>
+            </li>
           </ul>
         </aside>
         <main className="p-4">{children}</main>

@@ -82,6 +82,7 @@ import type { ReactNode } from 'react';
 import TopNav from '@/components/TopNav';
 export default function Shell({ children, aside }: { children: ReactNode; aside?: ReactNode }) {
 return (
+
 <div className="min-h-dvh grid grid-rows-[auto_1fr]">
 <TopNav />
 <div className="grid md:grid-cols-[240px_1fr]">
@@ -98,6 +99,7 @@ import Shell from '@/components/Shell';
 export default function Layout({ children }: { children: ReactNode }) {
 return (
 <Shell aside={
+
 <ul className="text-sm space-y-1">
 <li><a href="/lessons">Lessons</a></li>
 <li><a href="/review">Review</a></li>

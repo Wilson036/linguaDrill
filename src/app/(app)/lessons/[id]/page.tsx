@@ -3,8 +3,10 @@ import { getPack } from '../data';
 
 export default async function LessonDetail({
   params,
-}: { params: Promise<{ id: string }> }) {
-  const { id } = await params;       // 新版 Next 建議 await params
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params; // 新版 Next 建議 await params
   const pack = await getPack(id);
 
   if (!pack) {
@@ -13,12 +15,22 @@ export default async function LessonDetail({
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold">{pack.title} <span className="text-sm text-gray-500">({pack.langFrom} → {pack.langTo})</span></h1>
+      <h1 className="text-xl font-bold">
+        {pack.title}{' '}
+        <span className="text-sm text-gray-500">
+          ({pack.langFrom} → {pack.langTo})
+        </span>
+      </h1>
       <ul className="space-y-2">
-        {pack.items.map(it => (
+        {pack.items.map((it) => (
           <li key={it.id} className="rounded border p-3">
-            <div className="font-medium">{it.term} <span className="text-gray-500">— {it.translation}</span></div>
-            {it.pos && <div className="text-xs text-gray-500 mt-0.5">詞性：{it.pos}</div>}
+            <div className="font-medium">
+              {it.term}{' '}
+              <span className="text-gray-500">— {it.translation}</span>
+            </div>
+            {it.pos && (
+              <div className="mt-0.5 text-xs text-gray-500">詞性：{it.pos}</div>
+            )}
             {(it.exampleFrom || it.exampleTo) && (
               <div className="mt-1 text-sm">
                 {it.exampleFrom && <div>📘 {it.exampleFrom}</div>}
@@ -27,8 +39,13 @@ export default async function LessonDetail({
             )}
             {!!it.tags?.length && (
               <div className="mt-1 flex flex-wrap gap-1">
-                {it.tags!.map(tag => (
-                  <span key={tag} className="text-[11px] rounded bg-gray-100 px-1.5 py-0.5">{tag}</span>
+                {it.tags!.map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded bg-gray-100 px-1.5 py-0.5 text-[11px]"
+                  >
+                    {tag}
+                  </span>
                 ))}
               </div>
             )}

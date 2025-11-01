@@ -2,26 +2,36 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import axios from 'axios';
+import { useAuth, getAuthToken } from '@/hooks/use-auth';
+import ProtectedRoute from '@/components/protected-route';
 
 type UploadResp = { ok: true; url: string } | { ok: false; error: string };
-const base = process.env.NEXT_PUBLIC_API_BASE;
+const API = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:4000';
 
-export default function UploadPage() {
+function UploadPageContent() {
   const [file, setFile] = useState<File | null>(null);
   const [serverUrl, setServerUrl] = useState<string | null>(null);
   const [status, setStatus] = useState<
     'idle' | 'ready' | 'uploading' | 'done' | 'error'
   >('idle');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
+  const pathname = usePathname();
 
   // 選檔並立即上傳
   async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
+
+    // 驗證檔案類型
     if (!selectedFile.type.startsWith('audio/')) {
       alert('請上傳音檔');
       return;
     }
+
+    // 驗證檔案大小
     if (selectedFile.size > 50 * 1024 * 1024) {
       alert('檔案大小不能超過 50MB');
       return;
@@ -33,21 +43,40 @@ export default function UploadPage() {
 
     // 立即上傳
     try {
-      const fd = new FormData();
-      fd.append('file', selectedFile);
-      const res = await fetch(`${base}/upload`, { method: 'POST', body: fd });
-      const data = (await res.json()) as UploadResp;
-      console.log({ data });
-      if (!res.ok || !data.ok) {
+      const token = getAuthToken();
+      if (!token) {
+        router.push(`/auth?returnUrl=${encodeURIComponent(pathname)}`);
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      const response = await axios.post(`${API}/upload`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      const data = response.data as UploadResp;
+
+      if (!data.ok) {
         throw new Error('上傳失敗');
       }
-      setServerUrl(`${base}${data.url}`);
+
+      setServerUrl(`${API}${data.url}`);
       setStatus('done');
-    } catch (e) {
-      console.error(e);
+    } catch (err: unknown) {
+      console.error(err);
+      if (axios.isAxiosError(err) && err.response?.status === 401) {
+        localStorage.removeItem('jwt');
+        router.push(`/auth?returnUrl=${encodeURIComponent(pathname)}`);
+      } else {
+        alert('上傳失敗，請稍後再試');
+      }
       setStatus('error');
       setFile(null);
-      alert('上傳失敗，稍後再試');
     }
   }
 
@@ -75,14 +104,20 @@ export default function UploadPage() {
         <div className="text-sm text-blue-600">正在上傳檔案...</div>
       )}
 
-      {serverUrl ? (
-        <audio  className="w-full" controls src={serverUrl} />
-      ) : null}
+      {serverUrl ? <audio className="w-full" controls src={serverUrl} /> : null}
 
       <div className="text-sm text-gray-600">
         狀態：{status}
         {file && ` · 檔案：${file.name}`}
       </div>
     </div>
+  );
+}
+
+export default function UploadPage() {
+  return (
+    <ProtectedRoute redirectToPage={true}>
+      <UploadPageContent />
+    </ProtectedRoute>
   );
 }
